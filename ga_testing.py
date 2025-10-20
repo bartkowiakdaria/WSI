@@ -4,17 +4,15 @@ from genetic_algorithm import calc_target
 from ga_solver import GASolver
 import matplotlib.pyplot as plt
 
-TIME = 200
-GENOME_LEN = TIME * 2
+
+TIME = 200 # u nas w zadaniu silniki mogą pracować maksymalnie 20s (200*0,1s)
+GENOME_LEN = TIME * 2 # długość chromosomu każdego osobnika to TIME*2 (400), ponieważ mamy dwa niezależne silniki
 
 # --- TRYWIALNE ROZWIĄZANIE ---
 # rakieta nic nie robi, więc ląduje od razu w punkcie startowym
-zeros = np.zeros((1, GENOME_LEN), dtype=np.uint8)
+zeros = np.zeros((1, GENOME_LEN), dtype=np.uint8) # wektor samych zer
 score_zeros = calc_target(zeros)[0]
 print(f"Trywialne rozwiązanie (oba silniki wyłączone): {score_zeros}")
-zeros = np.ones((1, GENOME_LEN), dtype=np.uint8)
-score_ones = calc_target(zeros)[0]
-print(f"Trywialne rozwiązanie (oba silniki włączone): {score_ones}")
 
 # --- GÓRNE OGRANICZENIE WYNIKU ---
 # najlepszy możliwy wynik to 0, czyli idealne lądowanie 350 m od punktu startowego
@@ -22,7 +20,7 @@ print("Górne ograniczenie wyniku:", 0)
 
 # --- LOSOWY WYNIK ---
 # wynik bez użycia naszego algorytmu genetycznego
-random_rocket = np.random.default_rng(0).integers(0, 2, size=(1, GENOME_LEN))
+random_rocket = np.random.default_rng(0).integers(0, 2, size=(1, GENOME_LEN)) # losowy wektor binarny
 score_random = calc_target(random_rocket)[0]
 print(f"Losowe rozwiązanie: {score_random:.3f}")
 
@@ -43,6 +41,7 @@ for i in range(10): # testujemy dla 10 losowych random_seed
     mean += best_score
     print(f"Najlepszy wynik GA z własnymi parametrami dla ziarna {solver.ran_seed}: {best_score:.5f}")
 print("Średni wynik:", mean/10)
+
 # --- EKSPERYMENTOWANIE Z PRAWDOPODOBIEŃSTWEM MUTACJI ----
 print("Testowanie hiperparametru pm:")
 # Ustalone ziarno generatora
@@ -67,8 +66,8 @@ df = pd.DataFrame(results)
 print("\nTabela wyników dla ustalonego ziarna generatora:\n", df)
 
 
-# Średnia dla 10 różnych ziarn generatora
-seeds = np.random.randint(1, 1000, size=10)
+# Średnia dla 10 różnych ziaren generatora
+seeds = np.random.randint(1, 1000, size=10) # losujemy 10 wartości całkowitych [1,1000]
 print("Użyte ziarna generatora:", seeds)
 results = []
 for pm in pm_values:
@@ -93,6 +92,7 @@ for pm in pm_values:
 df = pd.DataFrame(results)
 print("\nTabela wyników dla 10 różnych ziaren generatora:\n", df)
 
+# wykres zależności funckji celu od parametru pm
 plt.figure(figsize=(8,5))
 plt.plot(df["pm"], df["mean_score"], marker='o')
 plt.xscale("log")

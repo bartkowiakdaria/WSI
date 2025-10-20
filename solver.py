@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 
+'''
+Interfejs solvera
+'''
 
 class Solver(ABC):
     """A solver. It may be initialized with some hyperparameters."""
