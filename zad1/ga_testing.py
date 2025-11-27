@@ -102,3 +102,5 @@ plt.title("Wpływ pm na wynik algorytmu genetycznego")
 plt.grid(True, which="both", linestyle="--", alpha=0.6)
 plt.tight_layout()
 plt.show()
+
+
