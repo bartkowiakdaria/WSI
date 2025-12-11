@@ -224,3 +224,4 @@ def genetic_algorithm(q_fn, P0, mu, pm, pc, t_max, ran=None):
         t += 1
 
     return x_hat, o_hat, P
+
