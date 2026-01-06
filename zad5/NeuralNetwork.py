@@ -144,9 +144,7 @@ class NeuralNetwork:
 
         return grads
 
-    # -------------------------
-    # SGD training
-    # -------------------------
+
     def train_SGD(self, X: np.ndarray, Y: np.ndarray, learning_rate: float = 0.1, epochs: int = 1000,
         batch_size: int | None = None, shuffle: bool = True) -> List[float]:
         """
