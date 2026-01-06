@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Tuple, Callable, Dict
 import numpy as np
 
 
@@ -14,10 +14,35 @@ def sigmoid_derivative(z: np.ndarray) -> np.ndarray:
     s = sigmoid(z)
     return s * (1.0 - s)
 
+def relu(z: np.ndarray) -> np.ndarray:
+    return np.maximum(0.0, z)
+
+def drelu(z: np.ndarray) -> np.ndarray:
+    return (z > 0).astype(z.dtype)
+
+def loss_mse(A: np.ndarray, Y: np.ndarray) -> float:
+    # L = (1/(2m)) * sum ||A - Y||^2
+    m = Y.shape[1]
+    return float(0.5 * np.sum((A - Y) ** 2) / m)
+
+def dloss_mse(A: np.ndarray, Y: np.ndarray) -> np.ndarray:
+    # dL/dA = (A - Y) / m
+    m = Y.shape[1]
+    return (A - Y) / m
+
+
+LOSSES: Dict[str, Tuple[Callable[[np.ndarray, np.ndarray], float],
+                        Callable[[np.ndarray, np.ndarray], np.ndarray]]] = {"mse": (loss_mse, dloss_mse)}
+
+ACTIVATIONS: Dict[str, Tuple[Callable[[np.ndarray], np.ndarray],
+                             Callable[[np.ndarray], np.ndarray]]] = {
+    "sigmoid": (sigmoid, sigmoid_derivative),
+    "relu": (relu, drelu),
+}
 
 
 class NeuralNetwork:
-    def __init__(self, layer_sizes: Iterable[int], seed: int = 0):
+    def __init__(self, layer_sizes: Iterable[int], seed: int = 0, loss: str = "mse", activation: str = "sigmoid"):
         """
         layer_sizes: np. [n_in, 8, 4, n_out] - n_in cech wejściowych, warstwa ukryta z 8 neuronami,
         warstwa ukryta z 4 neuronami, n_out wyjść
@@ -44,6 +69,14 @@ class NeuralNetwork:
             W = rng.normal(0.0, 1.0, size=(n_out, n_in + 1)) * np.sqrt(1.0 / n_in) # skalujemy aby liczby nie były za duże
             self.weights.append(W)
 
+        if loss not in LOSSES:
+            raise ValueError("Nie ma takiej straty.")
+        if activation not in ACTIVATIONS:
+            raise ValueError(f"Nie ma takiej funkcji aktywacji.")
+
+
+        self.loss_fn, self.dloss_fn = LOSSES[loss]
+        self.act_f, self.act_df = ACTIVATIONS[activation]
 
 
     def forward(self, X: np.ndarray) -> Tuple[List[np.ndarray], List[np.ndarray]]:
@@ -73,8 +106,8 @@ class NeuralNetwork:
             Z = W @ A_bias # suma ważona
             pre_activ.append(Z)
 
-            # aktywacja: A = sigmoid(Z)
-            A = sigmoid(Z)
+            # aktywacja: A = activation_fun(Z)
+            A = self.act_f(Z)
             activations.append(A)
 
         return activations, pre_activ
@@ -85,17 +118,16 @@ class NeuralNetwork:
         return activations[-1]
 
 
-    def loss_mse(self, X: np.ndarray, Y: np.ndarray) -> float:
+    def loss(self, X: np.ndarray, Y: np.ndarray) -> float:
         """
-        Liczy bład sici na danych X względem prawdziwej wartości - u nas MSE:
-          L = (1/(2m)) * sum ||A_L - Y||^2
+        Liczy bład sieci na danych X względem prawdziwej wartości - u:
         Zakładamy Y ma ten sam kształt co A_L: (n_out, m)
         """
         A_L = self.predict(X)
         if A_L.shape != Y.shape:
             raise ValueError(f"Zły rozmiar targetów.") # zabezpieczenie
         m = Y.shape[1] #lb próbek
-        return float(0.5 * np.sum((A_L - Y) ** 2) / m) # liczymy mse
+        return self.loss_fn(A_L, Y) # liczymy mse
 
 
 
@@ -117,7 +149,8 @@ class NeuralNetwork:
         ones = np.ones((1, m)) # bias
 
         # start propagacji wstecznej: gradient po wyjściu
-        dA = (A_L - Y) / m
+        dA = self.dloss_fn(A_L, Y)
+
 
         grads: List[np.ndarray] = [np.zeros_like(W) for W in self.weights] # każdy gradient musi mieć kształt jak odpowiadająca mu lista wag W
 
@@ -129,7 +162,7 @@ class NeuralNetwork:
 
             # pochodna Z:
             # dZ = dA ∘ sigmoid'(Z)
-            dZ = dA * sigmoid_derivative(Z)
+            dZ = dA * self.act_df(Z)
 
             # doklejamy bias do A_prev, żeby policzyć dW w jednym kroku
             A_prev_bias = np.vstack([A_prev, ones])
@@ -182,7 +215,7 @@ class NeuralNetwork:
                         self.weights[i] -= learning_rate * grads[i]
 
             # zapis loss po epoce
-            L = self.loss_mse(X, Y)
+            L = self.loss(X, Y)
             history.append(L)
 
 
@@ -205,4 +238,4 @@ if __name__ == "__main__":
     nn = NeuralNetwork([2, 8, 1], seed=0)
     nn.train_SGD(X, Y, learning_rate=0.5, epochs=500, batch_size=32)
 
-    print("Final loss:", nn.loss_mse(X, Y))
+    print("Final loss:", nn.loss(X, Y))
