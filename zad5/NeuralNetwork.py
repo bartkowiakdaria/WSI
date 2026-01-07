@@ -221,3 +221,52 @@ class NeuralNetwork:
 
 
         return history
+
+    def train_Adam(self, X: np.ndarray, Y: np.ndarray, learning_rate: float = 0.001, beta1: float = 0.9,
+                   beta2: float = 0.999, epsilon: float = 1e-8, epochs: int = 1000, batch_size: int | None = None,
+                   shuffle: bool = True) -> List[float]:
+
+        n_in, m = X.shape
+        if Y.shape[1] != m:
+            raise ValueError("X i Y muszą mieć tyle samo próbek.")
+
+        rng = np.random.default_rng(0)
+
+        # momenty
+        M = [np.zeros_like(W) for W in self.weights]
+        V = [np.zeros_like(W) for W in self.weights]
+
+        history: List[float] = []
+
+        for ep in range(1, epochs + 1):
+            if batch_size is None:
+                batches = [(X, Y)]
+            else:
+                idx = np.arange(m)
+                if shuffle:
+                    rng.shuffle(idx)
+                batches = []
+                for start in range(0, m, batch_size):
+                    b = idx[start:start + batch_size]
+                    batches.append((X[:, b], Y[:, b]))
+
+            for Xb, Yb in batches:
+                grads = self.backward(Xb, Yb)
+
+                for i in range(len(self.weights)):
+                    # aktualizacja momentów
+                    M[i] = beta1 * M[i] + (1 - beta1) * grads[i]
+                    V[i] = beta2 * V[i] + (1 - beta2) * (grads[i] ** 2)
+
+                    # korekta biasu
+                    m_hat = M[i] / (1 - beta1)
+                    v_hat = V[i] / (1 - beta2)
+
+                    # update wag
+                    self.weights[i] -= learning_rate * m_hat / (np.sqrt(v_hat) + epsilon)
+
+            history.append(self.loss(X, Y))
+
+        return history
+
+
