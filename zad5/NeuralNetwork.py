@@ -221,21 +221,3 @@ class NeuralNetwork:
 
 
         return history
-
-
-# =========================
-# TEST - DO USUNIĘCIA
-# =========================
-if __name__ == "__main__":
-
-
-    rng = np.random.default_rng(1)
-    m = 200
-    X = rng.normal(size=(2, m))
-
-    Y = sigmoid(2 * X[0:1, :] - 1.5 * X[1:2, :])
-
-    nn = NeuralNetwork([2, 8, 1], seed=0)
-    nn.train_SGD(X, Y, learning_rate=0.5, epochs=500, batch_size=32)
-
-    print("Final loss:", nn.loss(X, Y))
